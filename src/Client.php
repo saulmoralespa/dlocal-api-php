@@ -73,20 +73,58 @@ class Client
                 ]);
             return self::responseJson($response);
         }catch(RequestException $exception){
-            throw new \Exception($exception->getMessage());
+            $message = self::getErrorMessage($exception->getMessage());
+            throw new \Exception($message);
         }
     }
 
-    protected function generateSignature($xDate, $body)
+    public function paymentStatus($paymentId)
     {
-        $data = "$this->xLogin$xDate" . Utils::jsonEncode($body);
+        try{
+
+            $xDate = date('Y-m-d\TH:i:s.u\Z');
+
+            $response = $this->cliente()->get("payments/$paymentId/status", [
+                "headers" => [
+                    "X-Date" => $xDate,
+                    "X-Login" => $this->xLogin,
+                    "X-Trans-Key" => $this->xTransKey,
+                    "Authorization" => "V2-HMAC-SHA256, Signature: " . self::generateSignature($xDate)
+                ]
+            ]);
+            return self::responseJson($response);
+        }catch(RequestException $exception){
+            $message = self::getErrorMessage($exception->getMessage());
+            throw new \Exception($message);
+        }
+    }
+
+    protected function generateSignature($xDate, array $body = [])
+    {
+        $data = "$this->xLogin$xDate";
+        $data .= empty($body) ? '' : Utils::jsonEncode($body);
         return hash_hmac("sha256", $data, $this->secretKey);
     }
 
     public static function responseJson($response)
     {
-        return Utils::jsonEncode(
+        return Utils::jsonDecode(
             $response->getBody()->getContents()
         );
+    }
+
+    public static function getErrorMessage($response)
+    {
+        $pattern = "~{(.*?)}~";
+
+        preg_match($pattern, $response, $matches);
+
+        if (empty($matches))
+            return $response;
+
+        $json = Utils::jsonDecode($matches[0]);
+
+        return $json->message;
+
     }
 }

@@ -21,19 +21,19 @@ class DLocalTest extends TestCase
 
     public function testPayments()
     {
-        $params = array (
+        $params = array(
             'amount' => 120.0,
             'currency' => 'USD',
             'country' => 'PA',
             'payment_method_flow' => 'REDIRECT',
             'payer' =>
-                array (
+                array(
                     'name' => 'Thiago Gabriel',
                     'email' => 'thiago@example.com',
                     'document' => '53033315550',
                     'user_reference' => '12345',
                     'address' =>
-                        array (
+                        array(
                             'state' => 'Rio de Janeiro',
                             'city' => 'Volta Redonda',
                             'zip_code' => '27275-595',
@@ -41,7 +41,7 @@ class DLocalTest extends TestCase
                             'number' => '1106',
                         ),
                 ),
-            'order_id' => '657434343',
+            'order_id' => time(),
             'description' => 'Testing Sandbox',
             'notification_url' => 'http://merchant.com/notifications',
             'callback_url' => 'http://merchant.com/callback'
@@ -49,5 +49,13 @@ class DLocalTest extends TestCase
 
         $response = $this->dLocal->payments($params);
         var_dump($response);
+        $this->assertObjectHasAttribute('redirect_url', $response);
+    }
+
+    public function testPaymentStatus()
+    {
+        $paymentId = "PAY4334346343";
+        $response = $this->dLocal->paymentStatus($paymentId);
+        $this->assertObjectHasAttribute('status_code', $response);
     }
 }
